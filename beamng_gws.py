@@ -1,5 +1,6 @@
 import serial
 import keyboard
+import time
 
 PORT = "COM7"
 BAUDRATE = 115200
@@ -17,16 +18,13 @@ held_key = None
 def hold_key(key):
     global held_key
 
-    # Pokud už držíme stejnou klávesu,
-    # nic neděláme
-    if held_key == key:
-        return
-
-    # Pustíme předchozí klávesu
+    # Vždy nejdříve pustíme aktuální klávesu.
+    # Díky tomu lze stejný příkaz poslat znovu.
     if held_key is not None:
         keyboard.release(held_key)
+        time.sleep(0.03)
 
-    # Stiskneme novou klávesu
+    # Znovu stiskneme požadovanou klávesu
     keyboard.press(key)
 
     held_key = key
@@ -41,8 +39,10 @@ def release_key():
 
 
 def tap_key(key):
-    # Krátký stisk klávesy
-    keyboard.press_and_release(key)
+    # Krátký samostatný stisk
+    keyboard.press(key)
+    time.sleep(0.03)
+    keyboard.release(key)
 
 
 try:
@@ -93,14 +93,14 @@ try:
         # =========================
         # M+
         # =========================
-        # X je pouze krátký stisk.
+        # Každý M+ = nový stisk X
         elif command == "M+":
             tap_key("x")
 
         # =========================
         # M-
         # =========================
-        # Z je pouze krátký stisk.
+        # Každý M- = nový stisk Z
         elif command == "M-":
             tap_key("z")
 
@@ -112,8 +112,6 @@ except KeyboardInterrupt:
 
 finally:
 
-    # Před ukončením vždy pustíme
-    # případnou drženou klávesu
     release_key()
 
     ser.close()
