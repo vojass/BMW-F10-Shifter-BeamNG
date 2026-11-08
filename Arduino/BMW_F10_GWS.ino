@@ -22,6 +22,8 @@ MCP_CAN CAN0(CAN_CS);
 
 #define POS_D   0x4F
 
+#define POS_IDLE       0x0F
+
 #define POS_MS_UP      0x5F
 #define POS_MS_DOWN    0x6F
 #define POS_MS_CENTER  0x7F
@@ -187,8 +189,13 @@ void loop() {
       // ======================================
       // D
       // ======================================
+      // 0x4F = klasické D
+      // ======================================
 
-      if (position == POS_D && lastPosition != POS_D) {
+      if (
+        position == POS_D &&
+        lastPosition != POS_D
+      ) {
 
         displayValue = DISPLAY_D;
 
@@ -199,21 +206,48 @@ void loop() {
       }
 
       // ======================================
-      // M/S STŘED
+      // NÁVRAT Z M/S DO D
+      // ======================================
+      // Po M/S se páka vrací na 0x0F.
+      //
+      // Pokud jsme byli v M/S, 0x0F
+      // znamená návrat do D.
       // ======================================
 
-      if (
-        position == POS_MS_CENTER &&
-        lastPosition != POS_MS_CENTER
-      ) {
+      if (position == POS_IDLE) {
 
-        if (inDrive) {
+        if (inMS) {
+
+          inMS = false;
+          inDrive = true;
+
+          displayValue = DISPLAY_D;
+
+          Serial.println("D");
+        }
+      }
+
+      // ======================================
+      // M/S
+      // ======================================
+      // 0x7F = M/S
+      //
+      // M/S pošleme pouze pokud jsme
+      // opravdu v D a ještě nejsme v M/S.
+      //
+      // Tím zabráníme opakovanému M/S
+      // po M+ nebo M-.
+      // ======================================
+
+      if (position == POS_MS_CENTER) {
+
+        if (inDrive && !inMS) {
 
           inMS = true;
 
           displayValue = DISPLAY_D;
 
-          Serial.println("MS");
+          Serial.println("M/S");
         }
       }
 
@@ -228,7 +262,7 @@ void loop() {
 
         if (inMS) {
 
-          Serial.println("UP");
+          Serial.println("M+");
         }
       }
 
@@ -243,7 +277,7 @@ void loop() {
 
         if (inMS) {
 
-          Serial.println("DOWN");
+          Serial.println("M-");
         }
       }
 
