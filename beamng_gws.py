@@ -6,48 +6,116 @@ BAUDRATE = 115200
 
 ser = serial.Serial(PORT, BAUDRATE, timeout=1)
 
-print("BMW GWS -> KLAVESNICE")
+print("BMW GWS -> BEAMNG")
 print("COM7 pripojeno")
 print("Cekam na povely...")
 
-while True:
-    try:
-        command = ser.readline().decode("utf-8", errors="ignore").strip()
+# Aktuálně držená klávesa
+held_key = None
+
+
+def hold_key(key):
+    global held_key
+
+    # Pokud už držíme stejnou klávesu,
+    # nic neděláme
+    if held_key == key:
+        return
+
+    # Pustíme předchozí klávesu
+    if held_key is not None:
+        keyboard.release(held_key)
+
+    # Stiskneme novou klávesu
+    keyboard.press(key)
+
+    held_key = key
+
+
+def release_key():
+    global held_key
+
+    if held_key is not None:
+        keyboard.release(held_key)
+        held_key = None
+
+
+def tap_key(key):
+    # Krátký stisk klávesy
+    keyboard.press_and_release(key)
+
+
+try:
+
+    while True:
+
+        command = ser.readline().decode(
+            "utf-8",
+            errors="ignore"
+        ).strip()
 
         if not command:
             continue
 
         print("GWS:", command)
 
+        # =========================
         # PARK
+        # =========================
         if command == "P":
-            keyboard.press_and_release("t")
+            hold_key("t")
 
+        # =========================
         # REVERSE
+        # =========================
         elif command == "R":
-            keyboard.press_and_release("o")
+            hold_key("o")
 
+        # =========================
         # NEUTRAL
+        # =========================
         elif command == "N":
-            keyboard.press_and_release("n")
+            hold_key("n")
 
+        # =========================
         # DRIVE
+        # =========================
         elif command == "D":
-            keyboard.press_and_release("y")
+            hold_key("y")
 
+        # =========================
         # MANUAL / SPORT
+        # =========================
+        # U musí být drženo.
         elif command == "M/S":
-            keyboard.press_and_release("u")
+            hold_key("u")
 
+        # =========================
         # M+
+        # =========================
+        # X je pouze krátký stisk.
         elif command == "M+":
-            keyboard.press_and_release("x")
+            tap_key("x")
 
+        # =========================
         # M-
+        # =========================
+        # Z je pouze krátký stisk.
         elif command == "M-":
-            keyboard.press_and_release("z")
+            tap_key("z")
 
-    except KeyboardInterrupt:
-        break
 
-ser.close()
+except KeyboardInterrupt:
+
+    print("\nUkoncuji...")
+
+
+finally:
+
+    # Před ukončením vždy pustíme
+    # případnou drženou klávesu
+    release_key()
+
+    ser.close()
+
+    print("COM7 odpojeno")
